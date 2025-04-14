@@ -1,0 +1,91 @@
+covo
+retail
+
+# Remove rows with missing CustomerID or Description
+df.dropna(subset=['Customer ID'], inplace=True)
+
+# Remove cancelled transactions (InvoiceNo starting with 'C')
+df = df[~df['Invoice'].astype(str).str.startswith('C')]
+
+# Remove zero or negative quantities and unit prices
+df = df[(df['Quantity'] > 0) & (df['Price'] > 0)]
+df['TotalPrice'] = df['Quantity'] * df['Price']
+df['InvoiceDate'] = pd.to_datetime(df['InvoiceDate'])
+snapshot_date = df['InvoiceDate'].max() + pd.Timedelta(days=1)
+
+rfm = df.groupby('Customer ID').agg({
+    'InvoiceDate': lambda x: (snapshot_date - x.max()).days,  # Recency
+    'Invoice': 'nunique',                                     # Frequency
+    'TotalPrice': 'sum'                                       # Monetary
+}).reset_index()
+
+rfm.columns = ['CustomerID', 'Recency', 'Frequency', 'Monetary']
+
+#  Score RFM Segments
+
+rfm['R_score'] = pd.qcut(rfm['Recency'], 4, labels=[4, 3, 2, 1]).astype(int)
+rfm['F_score'] = pd.qcut(rfm['Frequency'].rank(method="first"), 4, labels=[1, 2, 3, 4]).astype(int)
+rfm['M_score'] = pd.qcut(rfm['Monetary'], 4, labels=[1, 2, 3, 4]).astype(int)
+
+rfm['RFM_Segment'] = rfm['R_score'].astype(str) + rfm['F_score'].astype(str) + rfm['M_score'].astype(str)
+rfm['RFM_Score'] = rfm[['R_score', 'F_score', 'M_score']].sum(axis=1)
+
+
+# Assign Segment Labels
+
+def segment_customer(score):
+    if score >= 9:
+        return 'Champions'
+    elif score >= 7:
+        return 'Loyal Customers'
+    elif score >= 5:
+        return 'Potential Loyalists'
+    else:
+        return 'At Risk'
+
+rfm['Segment'] = rfm['RFM_Score'].apply(segment_customer)
+import matplotlib.pyplot as plt
+import seaborn as sns
+# Plot Segment Distribution
+plt.figure(figsize=(10, 6))
+sns.countplot(data=rfm, x='Segment', order=rfm['Segment'].value_counts().index, palette="coolwarm")
+plt.title("Customer Segments (RFM)")
+plt.xlabel("Segment")
+plt.ylabel("Number of Customers")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+
+2222222)
+import pandas as pd
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+# Transactions data
+transactions = [
+    ['I1', 'I3', 'I4'],
+    ['I2', 'I3', 'I5', 'I6'],
+    ['I1', 'I2', 'I3', 'I5'],
+    ['I2', 'I5'],
+    ['I1', 'I3', 'I5']
+]
+
+
+# Encode transactions
+te = TransactionEncoder()
+te_array = te.fit_transform(transactions)
+df = pd.DataFrame(te_array, columns=te.columns_)
+
+# Apply FP-Growth with minimum support of 0.4 (at least 2 out of 5 transactions)
+frequent_itemsets = fpgrowth(df, min_support=0.4, use_colnames=True)
+
+# Generate rules with minimum confidence of 0.7
+rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.7)
+
+# Display results
+print("📌 Frequent Itemsets:")
+print(frequent_itemsets)
+
+print("\n📌 Association Rules:")
+print(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']])
+
