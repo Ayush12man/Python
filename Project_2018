@@ -1,0 +1,175 @@
+Car) pr1
+import numpy as np
+import pandas as pd
+import os
+data=pd.read_csv(r"C:\Users\Admin\Downloads\CarPrice_Assignment (1).csv")
+# Splitting the company name from model from carname column
+companyName = data['CarName'].apply(lambda x:x.split(' ')[0])
+data.insert(3,"companyName",companyName)
+data.drop(["CarName"],axis=1,inplace=True)
+data.head()
+
+
+data.companyName=data.companyName.str.lower()
+def replace_name(a,b):
+    data.companyName.replace(a,b,inplace=True)
+
+replace_name('maxda','mazda')
+replace_name('porcshce','porsche')
+replace_name('toyouta','toyota')
+replace_name('vokswagen','volkswagen')
+replace_name('vw','volkswagen')
+
+data.companyName.unique()
+# Checking the car names again
+data['companyName'].value_counts()
+# Creating dummies for Columns
+def dummies(cols,df):
+    df=pd.get_dummies(df,columns=cols)
+    return df
+# Appling the function to the data
+print(data.columns)
+cols_list=['fueltype','aspiration','carbody','drivewheel','enginetype','cylindernumber','fuelsystem']
+data=dummies(cols_list,data)
+print(data.columns)
+# Recognising categorical features
+cat_features=data.dtypes[data.dtypes == 'object'].index
+print("No of categorical feature:",len(cat_features),'\n')
+print(cat_features)
+
+# Recognising numerical features
+num_features=data.dtypes[data.dtypes !='object'].index
+print("No of numerical feature:",len(num_features),'\n')
+print(num_features)
+
+del_cols=['companyName','doornumber','enginelocation']
+data=data.drop(del_cols,axis=1)
+data.columns
+from sklearn import preprocessing
+# Single out the feature
+train_features = data
+test_features = data
+train_target=data['price']
+print(train_features.shape)
+print(test_features.shape)
+
+from sklearn import ensemble
+from sklearn.metrics import mean_squared_error,mean_absolute_error
+from math import sqrt
+
+# Assuming you have already defined "train_feature" and "train_target"
+# initialize the GradientBoostingRegression model with specified parameters
+model=ensemble.GradientBoostingRegressor(
+     n_estimators=15000,
+     max_depth=4,
+     min_samples_leaf=15,
+     min_samples_split=10,
+     learning_rate=0.01,
+     loss='huber',
+     random_state=5
+)
+# Convert train_target to a 1D numpy array
+#train_target = train_target.to_numpy().flatten()
+
+# Fit the model
+model.fit(train_features,train_target)
+
+# Make prediction with model
+target_predictions=model.predict(test_features)
+#target_predictions=np.reshape(target_predictions,-1)
+# Prepare solution
+solution=pd.DataFrame({"id":data.car_ID,"price":target_predictions})
+solution
+
+from sklearn.metrics import mean_squared_error,mean_absolute_error,r2_score
+# Assuming test_target is the true target values for the test set
+test_target=data["price"]
+# calculate evalution metrics
+mse=mean_squared_error(test_target,target_predictions)
+mae=mean_absolute_error(test_target,target_predictions)
+rmse=np.sqrt(mse)
+r2=r2_score(test_target,target_predictions)
+# Printing the metrics
+print(f"Mean Square Error :{mse:.2f}")
+print(f"Mean absolute Error :{mae:.2f}")
+print(f" Root Mean Square Error :{rmse:.2f}")
+print(f"R-squared:{r2:.2f}")
+
+from sklearn.metrics import mean_squared_error,mean_absolute_error,r2_score
+# Assuming test_target is the true target values for the test set
+train_target=data["price"]
+# calculate evalution metrics
+mse=mean_squared_error(train_target,target_predictions)
+mae=mean_absolute_error(train_target,target_predictions)
+rmse=np.sqrt(mse)
+r2=r2_score(train_target,target_predictions)
+# Printing the metrics
+print(f"Mean Square Error :{mse:.2f}")
+print(f"Mean absolute Error :{mae:.2f}")
+print(f" Root Mean Square Error :{rmse:.2f}")
+print(f"R-squared:{r2:.2f}")
+
+2nd) lap
+import pandas as pd
+from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.ensemble import AdaBoostRegressor, GradientBoostingRegressor
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import mean_squared_error
+
+# Load dataset
+df = pd.read_csv("/content/Cleaned_Laptop_data.csv")
+# Remove "GB" from ram_gb, ssd, hdd and convert to numeric
+df['ram_gb'] = df['ram_gb'].str.extract('(\d+)').astype(float)
+df['ssd'] = df['ssd'].str.extract('(\d+)').astype(float)
+df['hdd'] = df['hdd'].str.extract('(\d+)').astype(float)
+
+# Handle missing display size (optional: fill with median or drop)
+df = df[df['display_size'] != 'Missing']  # Optionally: df['display_size'].replace('Missing', np.nan).fillna(value, inplace=True)
+
+# Encode categorical features
+cat_cols = df.select_dtypes(include='object').columns
+le = LabelEncoder()
+for col in cat_cols:
+    df[col] = df[col].astype(str)
+    df[col] = le.fit_transform(df[col])
+
+X = df.drop(['latest_price'], axis=1)
+y = df['latest_price']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# AdaBoost Regressor
+import numpy as np
+ada_params = {
+    'n_estimators': [50, 100, 150],
+    'learning_rate': [0.01, 0.1, 1.0]
+}
+ada = AdaBoostRegressor(random_state=42)
+grid_ada = GridSearchCV(ada, ada_params, cv=5, scoring='neg_mean_squared_error')
+grid_ada.fit(X_train, y_train)
+
+best_ada = grid_ada.best_estimator_
+ada_preds = best_ada.predict(X_test)
+ada_rmse = np.sqrt(mean_squared_error(y_test, ada_preds))
+# Gradient Boosting Regressor
+# ----------------------------
+gb_params = {
+    'n_estimators': [100, 150],
+    'learning_rate': [0.01, 0.1],
+    'max_depth': [3, 5]
+}
+gb = GradientBoostingRegressor(random_state=42)
+grid_gb = GridSearchCV(gb, gb_params, cv=5, scoring='neg_mean_squared_error')
+grid_gb.fit(X_train, y_train)
+
+best_gb = grid_gb.best_estimator_
+gb_preds = best_gb.predict(X_test)
+gb_rmse = np.sqrt(mean_squared_error(y_test, gb_preds))
+
+# Results
+print("Best AdaBoost RMSE:", ada_rmse)
+print("Best Params (AdaBoost):", grid_ada.best_params_)
+
+print("Best Gradient Boosting RMSE:", gb_rmse)
+print("Best Params (Gradient Boosting):", grid_gb.best_params_)
+
+
