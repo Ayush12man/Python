@@ -1,0 +1,101 @@
+import tensorflow as tf
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+import pandas as pd
+# Load the breast cancer dataset
+data = load_breast_cancer()     # while traget variable is present in array format
+# Convert the dataset into a DataFrame 
+df = pd.DataFrame(data.data, columns=data.feature_names)   # Traget Variables is not present in DataFrame 
+X = data.data
+y = data.target
+
+# Split the dataset into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Standardize the features
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+# Define the model
+model = tf.keras.models.Sequential([
+    tf.keras.layers.Dense(10, activation='relu'),
+    tf.keras.layers.Dense(5, activation='relu'),
+    tf.keras.layers.Dense(1, activation='sigmoid')
+])
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# Train the model
+history = model.fit(X_train, y_train, epochs=50, validation_data=(X_test, y_test))
+# Evaluate the model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f'Test Accuracy: {accuracy}')
+# Hyperparameter Tunning
+import keras_tuner as kt
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.utils import to_categorical
+# Define model creation function
+def create_model(hp):
+    model = Sequential()
+
+    # Tune the number of layers
+    num_layers = hp.Int('num_layers', min_value=2, max_value=4, step=1)
+    
+    # Add hidden layers based on num_layers
+    for _ in range(num_layers):
+        model.add(Dense(units=hp.Int('units', min_value=6, max_value=128, step=6), activation='relu'))
+#units-represents the number of neurons in each hidden layer
+    # Add output layer
+    model.add(Dense(units=1, activation='sigmoid'))  # For binary classification
+
+    # Tune the learning rate
+    learning_rate = hp.Float('learning_rate', min_value=0.0001, max_value=0.01, sampling='LOG')
+    
+    # Compile the model
+    model.compile(optimizer=Adam(learning_rate=learning_rate), loss="binary_crossentropy", metrics=["accuracy"])
+    
+    return model
+    import keras_tuner as kt
+
+# Set up the tuner (use RandomSearch for simplicity)
+tuner = kt.RandomSearch(
+    create_model,  # Pass the model creation function
+    objective='val_accuracy',  # Objective to optimize (validation accuracy)
+    max_trials=4,  # Number of different models to try (you can increase this number)
+    executions_per_trial=1,  # Number of times to train each model
+    directory='kt_dir',  # Directory to store results
+    project_name='tuning_mnist'  # Name of the project
+)
+
+# Perform the hyperparameter search
+tuner.search(X_train, y_train, epochs=10, validation_data=(X_test, y_test), batch_size=32)
+
+# Get the best model and its hyperparameters
+best_model = tuner.get_best_models(num_models=1)[0]
+best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
+#num_models=1 means it will return only the single best model.
+
+# Print the best hyperparameters
+print("Best Hyperparameters:", best_hp.values)
+
+# Step 3: Print the summary of the model
+best_model.summary()
+
+loss, accuracy = best_model.evaluate(X_train, y_train)
+print(f"Train Accuracy with Best Hyperparameters: {accuracy}")
+# Assuming you have already run the hyperparameter tuning and obtained the tuner object
+
+# Step 1: Get the best hyperparameters
+best_hp = tuner.get_best_hyperparameters(num_trials=1)[0]
+
+# Step 2: Use the best hyperparameters to create the model
+best_model = create_model(best_hp)
+
+best_model.fit(X_train, y_train, validation_data=(X_test, y_test))
+
+# Step 4: Evaluate the model on the test set
+loss, accuracy = best_model.evaluate(X_test, y_test)
+print(f"Test Accuracy with Best Hyperparameters: {accuracy}")
