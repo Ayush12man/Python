@@ -1,0 +1,152 @@
+ Q1
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
+from scipy.optimize import minimize
+#Loading Dataset
+import pandas as pd # Import pandas
+data = pd.DataFrame({
+'X1': [50, 50, 50, 60, 60, 60, 70, 70, 70],
+'X2': [10, 20, 30, 10, 20, 30, 10, 20, 30],
+'y': [65, 72, 70, 80, 85, 83, 75, 82, 79]
+})
+# Print the DataFrame
+print(data)
+
+#Extract variables
+X1=data['X1']
+X2=data['X2']
+y=data['y']
+#Fitting Quadratic Model
+X=np.column_stack((X1,X2))
+X
+
+poly=PolynomialFeatures(degree=2,include_bias=False)
+X_poly=poly.fit_transform(X)
+▾ LinearRegression i ?
+LinearRegression()
+model=LinearRegression()
+model.fit(X_poly,y)
+#Coefficients and Intercept
+coeff=model.coef_
+intercept=model.intercept_
+print("\nModel Coefficients:",coeff)
+print('Intercept:',intercept)
+
+#Visualizing the response Surface
+#Generating grid of values for plotting
+x1_range=np.linspace(50,70,50)
+x2_range=np.linspace(10,30,50)
+x1_grid,x2_grid=np.meshgrid(x1_range,x2_range)
+X_grid=np.column_stack((x1_grid.ravel(),x2_grid.ravel()))
+X_poly_grid=poly.transform(X_grid)
+y_pred=model.predict(X_poly_grid).reshape(x1_grid.shape)
+#3D Plot
+fig=plt.figure(figsize=(12,6))
+ax=fig.add_subplot(121,projection='3d')
+ax.plot_surface(x1_grid,x2_grid,y_pred,cmap='viridis',alpha=0.8)
+ax.set_title('3D Response Surface')
+ax.set_xlabel('X1(Temperature)')
+ax.set_ylabel('X2(Time)')
+ax.set_zlabel('y(Output)')
+#Contour Plot
+ax2=fig.add_subplot(122)
+contour=ax2.contourf(x1_grid,x2_grid,y_pred,cmap='viridis')
+plt.colorbar(contour,ax=ax2)
+ax2.set_title("Contour Plot of Response Surface")
+ax2.set_xlabel("X1(Temperature)")
+ax2.set_ylabel('X2(Time)')
+plt.tight_layout()
+plt.show()
+#Contour Plot
+ax2=fig.add_subplot(122)
+contour=ax2.contourf(x1_grid,x2_grid,y_pred,cmap='viridis')
+plt.colorbar(contour,ax=ax2)
+ax2.set_title("Contour Plot of Response Surface")
+ax2.set_xlabel("X1(Temperature)")
+ax2.set_ylabel('X2(Time)')
+plt.tight_layout()
+plt.show()
+#Optimization
+#Objective Function (-ve bcoz we want to maximize, we got Beta0 as negative)
+def objective(X):
+x1,x2=X
+return-(model.predict(poly.transform([[x1,x2]]))[0])
+#Initial Guess(taken from plot)
+x0=[60,20]
+#Bounds
+bounds=[(50,70),(10,30)]
+#Minimize(find maximum by minimizing the negative)
+result=minimize(objective,x0,bounds=bounds)
+optimal_x1,optimal_x2=result.x
+optimal_y=-result.fun
+
+plt.colorbar(contour,ax=ax2)
+
+print(f"\noptimal x1:{optimal_x1:2f},Optimal x2:{optimal_x2:2f},optimal y:{optimal_y:2f}")
+
+ Q2
+#Loading Dataset
+import pandas as pd # Import pandas
+df = pd.DataFrame({
+'X1': [5, 5, 5, 10, 10, 10, 15, 15, 15],
+'X2': [10, 20, 30, 10, 20, 30, 10, 20, 30],
+'y': [15, 25, 35, 20, 30, 40, 25, 35, 45]
+})
+# Print the DataFrame
+print(df)
+#Extract variables
+X=df[['X1','X2']]
+y=df['y']
+model=LinearRegression()
+model.fit(X,y)
+LinearRegression i ?
+LinearRegression()
+#Coefficients and Intercept
+coeff=model.coef_
+intercept=model.intercept_
+print("\nModel Coefficients:",coeff)
+print('Intercept:',intercept)
+
+#Visualizing the response Surface
+#Generating grid of values for plotting
+x1_range=np.linspace(5,15,50)
+x2_range=np.linspace(10,30,50)
+x1_grid,x2_grid=np.meshgrid(x1_range,x2_range)
+X_grid=np.column_stack((x1_grid.ravel(),x2_grid.ravel()))
+#X_poly_grid=poly.transform(X_grid)
+y_pred=model.predict(X_grid).reshape(x1_grid.shape)
+
+#3D Plot
+fig=plt.figure(figsize=(12,6))
+ax=fig.add_subplot(121,projection='3d')
+ax.plot_surface(x1_grid,x2_grid,y_pred,cmap='viridis',alpha=0.8)
+ax.set_title('3D Response Surface')
+ax.set_xlabel('X1(Pressure)')
+ax.set_ylabel('X2(Flow Rate)')
+ax.set_zlabel('y(Output)')
+#Contour Plot
+ax2=fig.add_subplot(122)
+contour=ax2.contourf(x1_grid,x2_grid,y_pred,cmap='viridis')
+plt.colorbar(contour,ax=ax2)
+ax2.set_title("Contour Plot of Response Surface")
+ax2.set_xlabel("X1(Pressure)")
+ax2.set_ylabel('X2(Flow Rate)')
+plt.tight_layout()
+plt.show()
+
+def objective(X):
+x1,x2=X
+return-(model.predict([[x1,x2]])[0])
+#Initial Guess(taken from plot)
+x0=[10,20]
+#Bounds
+bounds=[(5,15),(10,30)]
+#Minimize(find maximum by minimizing the negative)
+result=minimize(objective,x0,bounds=bounds)
+optimal_x1,optimal_x2=result.x
+optimal_y=-result.fun
+print(f"\noptimal x1:{optimal_x1:2f},Optimal x2:{optimal_x2:2f},optimal y:{optimal_y:2f}")
