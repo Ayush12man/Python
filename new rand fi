@@ -1,0 +1,40 @@
+ Q1
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import seaborn as sns
+import matplotlib.pyplot as plt
+# Load the inbuilt "sleepstudy" dataset
+data = sm.datasets.get_rdataset("sleepstudy", "lme4").data
+data.head()
+
+# Plot reaction time vs days for each subject
+sns.lmplot(x="Days", y="Reaction", hue="Subject", data=data, ci=None, height=5, aspect=1.5)
+plt.title("Reaction Time vs Sleep Deprivation (Days) for Each Subject")
+plt.show()
+
+# Fit a mixed-effects model with random intercept for each subject
+model = smf.mixedlm("Reaction ~ Days", data, groups=data["Subject"]).fit()
+ 3/6
+# Display model summary
+print(model.summary())
+
+#H0: Days are not significant v/s H1: Days are significant
+# P value = 0.0000< 0.05 Reject H0 at 5% los Days are significant fixed effect.
+# Display random effect estimates for each subject
+print(model.random_effects)
+
+ Q 2
+
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+# Load the dataset
+data = sm.datasets.get_rdataset("InstEval", "lme4").data
+# Display first few rows
+print(data.head())
+
+# Fit a mixed model with 'service' and 'dept' as fixed effects and 's' (student) as a random effect
+model = smf.mixedlm("y ~ service * dept", data, groups=data["s"]).fit()
+# Display model summary
+print(model.summary())
