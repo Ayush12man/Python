@@ -1,0 +1,52 @@
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from pyDOE2 import fracfact, ff2n
+# Q1.a - Create a 2^(3-1) fractional factorial design
+FrF2(nruns=4, nfactors=3, generators="AB")
+design_matrix = fracfact("A B AB")
+df = pd.DataFrame(design_matrix, columns=["A", "B", "C=AB"])
+print(df)
+# Q1.c - Combine design and response data
+defect_rate = np.array([5, 3, 6, 2])
+df["Response"] = defect_rate
+print(df)
+# Q1.e - Fit ANOVA model for DefectRate
+model = smf.ols("Response ~ A + B + Q('C=AB')", data=df).fit()
+print(model.summary())
+# Q1.i - Update ANOVA with new observed data
+defect_rate_new = np.array([4, 3, 7, 5])
+df["Response"] = defect_rate_new
+model_updated = smf.ols("Response ~ A + B + Q('C=AB')", data=df).fit()
+print(model_updated.summary())
+# Q2.a - Create a 2^(4-1) fractional factorial design
+# FrF2(nruns=8, nfactors=4, generators="ABC")
+design_matrix_q2 = fracfact("A B C ABC")
+df_q2 = pd.DataFrame(design_matrix_q2, columns=["A", "B", "C", "D=ABC"])
+print(df_q2)
+# Q2.c - Combine design and response data
+yield_values = np.array([12.5, 15.2, 13.8, 16.4, 14.3, 17.1, 15.6, 18])
+df_q2["Yield"] = yield_values
+print(df_q2)
+# Q2.e - Fit ANOVA model for Yield
+model_q2 = smf.ols("Yield ~ A + B + C + Q('D=ABC')", data=df_q2).fit()
+print(model_q2.summary())
+# Q2.i - Update ANOVA with new observed data
+yield_values_new = np.array([13.0, 16.0, 14.0, 17.0, 15.0, 18.0, 16.0, 19.0])
+df_q2["Yield"] = yield_values_new
+model_q2_updated = smf.ols("Yield ~ A + B + C + Q('D=ABC')", data=df_q2).fit()
+print(model_q2_updated.summary())
+OLS R
+# Q3 - Create a 2^(4-1) fractional factorial design with ABCD as the generator
+design_q3 = fracfact("A B C D ABCD")
+df_q3 = pd.DataFrame(design_q3, columns=["A", "B", "C", "D", "E=ABCD"])
+print(df_q3)
+A B
+# Q4 - Create a 2^(5-2) fractional factorial design with AB and AC as generators
+design_q4 = fracfact("A B C AB AC")
+df_q4 = pd.DataFrame(design_q4, columns=["A", "B", "C", "D=AB", "E=AC"])
+# Fit an ANOVA model for simulated response
+model_q4 = smf.ols("Response ~ A + B + C + Q('D=AB') + Q('E=AC')", data=df_q4).fit()
+print(model_q4.summary())
+
